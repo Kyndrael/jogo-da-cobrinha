@@ -1,108 +1,137 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Snake Game</title>
-    <link rel="stylesheet" href="style.css">
-    <script defer src="script.js"></script>
-</head>
-<body>
-    <h1>SNAKE GAME!</h1>
-    <canvas id="snake" width="512" height="512"></canvas>
-</body>
-</html>
-let canvas = document.getElementById("snake"); //criar elemento que irá rodar o jogo
-let context = canvas.getContext("2d"); //....
+let canvas = document.getElementById("snake");
+let context = canvas.getContext("2d");
 let box = 32;
-let snake = []; //criar cobrinha como lista, já que ela vai ser uma série de coordenadas, que quando pintadas, criam os quadradinhos
-snake[0] ={
-    x: 8 * box,
-    y: 8 * box
-}
-let direction = "right";
-let food ={
+let snake = [{ x: 8 * box, y: 8 * box }];
+let direction = "up";
+let food = {
     x: Math.floor(Math.random() * 15 + 1) * box,
     y: Math.floor(Math.random() * 15 + 1) * box
+};
+let score = 0;
+let extraSnakes = []; // Armazenar as cobras adicionais
+let extraSnakeCounter = 0; // Contador para adicionar nova cobra
+
+// Função para criar o fundo
+function criarBG() {
+    context.fillStyle = "lightblue";
+    context.fillRect(0, 0, 16 * box, 16 * box);
 }
 
-function criarBG(){
-    context.fillStyle = "lightgreen";
-    context.fillRect(0, 0, 16*box, 16*box); //desenha o retângulo usando x e y e a largura e altura setadas
-}
-
-function criarCobrinha (){
-    for(i = 0; i < snake.length; i++){
-        context.fillStyle = "green";
+// Função para desenhar a cobrinha
+function criarCobrinha() {
+    // Desenha a cobrinha do jogador
+    for (let i = 0; i < snake.length; i++) {
+        context.fillStyle = "purple";  // Cor da cobrinha do jogador
         context.fillRect(snake[i].x, snake[i].y, box, box);
+    }
+
+    // Desenha as cobras adicionais (agora roxas)
+    for (let i = 0; i < extraSnakes.length; i++) {
+        for (let j = 0; j < extraSnakes[i].length; j++) {
+            context.fillStyle = "purple";  // Cor roxa para as cobras adicionais
+            context.fillRect(extraSnakes[i][j].x, extraSnakes[i][j].y, box, box);
+        }
     }
 }
 
-function drawFood (){
-    context.fillStyle = "red";
+// Função para desenhar a comida
+function drawFood() {
+    context.fillStyle = "yellow";
     context.fillRect(food.x, food.y, box, box);
 }
 
-//quando um evento acontece, detecta e chama uma função
+// Detecta as teclas pressionadas
 document.addEventListener('keydown', update);
 
-function update(event){
-    if(event.keyCode == 37 && direction != 'right') direction = 'left';
-    if(event.keyCode == 38 && direction != 'down') direction = 'up';
-    if(event.keyCode == 39 && direction != 'left') direction = 'right';
-    if(event.keyCode == 40 && direction != 'up') direction = 'down';
+function update(event) {
+    if (event.keyCode == 37 && direction != 'right') direction = 'left';
+    if (event.keyCode == 38 && direction != 'down') direction = 'up';
+    if (event.keyCode == 39 && direction != 'left') direction = 'right';
+    if (event.keyCode == 40 && direction != 'up') direction = 'down';
 }
 
-function iniciarJogo(){    
+// Função principal do jogo
+function iniciarJogo() {
+    let snakeX = snake[0].x;
+    let snakeY = snake[0].y;
 
-    if(snake[0].x > 15*box && direction == "right") snake[0].x = 0;
-    if(snake[0].x < 0 && direction == 'left') snake[0].x = 16 * box;
-    if(snake[0].y > 15*box && direction == "down") snake[0].y = 0;
-    if(snake[0].y < 0 && direction == 'up') snake[0].y = 16 * box;
-    
-    for(i = 1; i < snake.length; i++){
-        if(snake[0].x == snake[i].x && snake[0].y == snake[i].y){
+    // Movimenta a cobrinha do jogador
+    if (direction == "right") snakeX += box;
+    if (direction == "left") snakeX -= box;
+    if (direction == "up") snakeY -= box;
+    if (direction == "down") snakeY += box;
+
+    // Gira a cobrinha para aparecer do lado oposto se sair das bordas
+    if (snakeX > 15 * box) snakeX = 0;
+    if (snakeX < 0) snakeX = 16 * box;
+    if (snakeY > 15 * box) snakeY = 0;
+    if (snakeY < 0) snakeY = 16 * box;
+
+    // Verifica colisão com o corpo da cobrinha do jogador
+    for (let i = 1; i < snake.length; i++) {
+        if (snake[0].x == snake[i].x && snake[0].y == snake[i].y) {
             clearInterval(jogo);
             alert('Game Over :(');
+            document.location.reload();
         }
+    }
+
+    // Verifica colisão com as cobras adicionais
+    for (let i = 0; i < extraSnakes.length; i++) {
+        for (let j = 0; j < extraSnakes[i].length; j++) {
+            if (snake[0].x == extraSnakes[i][j].x && snake[0].y == extraSnakes[i][j].y) {
+                clearInterval(jogo);
+                alert('Game Over :(');
+                document.location.reload();
+            }
+        }
+    }
+
+    // Verifica se a cobrinha do jogador comeu a comida
+    if (snakeX == food.x && snakeY == food.y) {
+        food.x = Math.floor(Math.random() * 15 + 1) * box;
+        food.y = Math.floor(Math.random() * 15 + 1) * box;
+        score += 10;
+        document.getElementById("score").innerText = `Score: ${score}`;
+    } else {
+        snake.pop();
+    }
+
+    // Verifica se alguma cobra adicional comeu a comida
+    for (let i = 0; i < extraSnakes.length; i++) {
+        if (extraSnakes[i][0].x == food.x && extraSnakes[i][0].y == food.y) {
+            food.x = Math.floor(Math.random() * 15 + 1) * box;
+            food.y = Math.floor(Math.random() * 15 + 1) * box;
+            score += 5;  // O jogador ganha metade dos pontos
+            document.getElementById("score").innerText = `Score: ${score}`;
+            extraSnakes[i].push({ x: extraSnakes[i][extraSnakes[i].length - 1].x, y: extraSnakes[i][extraSnakes[i].length - 1].y });
+        }
+    }
+
+    // Adiciona a nova cabeça da cobrinha do jogador
+    let newHead = { x: snakeX, y: snakeY };
+    snake.unshift(newHead);
+
+    // Movimenta as cobras adicionais
+    for (let i = 0; i < extraSnakes.length; i++) {
+        let newHeadExtra = { x: extraSnakes[i][0].x + box, y: extraSnakes[i][0].y };
+        if (newHeadExtra.x > 15 * box) newHeadExtra.x = 0;
+        if (newHeadExtra.x < 0) newHeadExtra.x = 16 * box;
+        if (newHeadExtra.y > 15 * box) newHeadExtra.y = 0;
+        if (newHeadExtra.y < 0) newHeadExtra.y = 16 * box;
+        extraSnakes[i].unshift(newHeadExtra);
+    }
+
+    // Cada 10 alimentos consumidos, adiciona uma cobra extra
+    if (score % 100 == 0 && extraSnakes.length < 3) {
+        let newExtraSnake = [{ x: Math.floor(Math.random() * 15 + 1) * box, y: Math.floor(Math.random() * 15 + 1) * box }];
+        extraSnakes.push(newExtraSnake);
     }
 
     criarBG();
     criarCobrinha();
     drawFood();
-
-    let snakeX = snake[0].x;
-    let snakeY = snake[0].y;
-
-    if(direction == "right") snakeX += box;
-    if(direction == "left") snakeX -= box;
-    if (direction == "up") snakeY -= box;
-    if(direction == "down") snakeY += box;
-
-    if(snakeX != food.x || snakeY != food.y){
-        snake.pop(); //pop tira o último elemento da lista
-    }else{
-        food.x = Math.floor(Math.random() * 15 +1) * box;
-        food.y = Math.floor(Math.random() * 15 +1) * box;
-    }
-    
-    let newHead ={
-        x: snakeX,
-        y: snakeY
-    }
-
-    snake.unshift(newHead); //método unshift adiciona como primeiro quadradinho da cobrinha
 }
 
+// Intervalo do jogo
 let jogo = setInterval(iniciarJogo, 100);
-body{
-    height: 95vh;
-    width: 95vw;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background-color:white;
-    color: rgb(52, 165, 52);
-}
